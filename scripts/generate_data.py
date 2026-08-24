@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import typer
 from rich import print
-from openai import OpenAI
+from groq import Groq
 
 app = typer.Typer(help="Synthetic Data Generation for Preference Alignment")
 
@@ -31,14 +31,15 @@ def generate(
     focus: str = "technical accuracy and safety",
     output_file: Path = Path("data/synthetic_preferences.jsonl"),
     seed_file: Path = Path("data/sample_preferences.jsonl"),
-    model: str = "gpt-4o",
+    model: str = "llama-3.1-8b-instant",
 ) -> None:
-    """Generate synthetic preference pairs using OpenAI."""
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
-    if not os.getenv("OPENAI_API_KEY"):
-        print("[red]Error: OPENAI_API_KEY environment variable not set.[/red]")
+    """Generate synthetic preference pairs using Groq (Llama 3.1 8B Instant)."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        print("[red]Error: GROQ_API_KEY environment variable not set.[/red]")
         raise typer.Exit(1)
+
+    client = Groq(api_key=api_key)
 
     # Load some examples from seed file
     examples_str = ""
@@ -47,8 +48,8 @@ def generate(
             lines = [line.strip() for line in f if line.strip()][:3]
             examples_str = "\n".join(lines)
 
-    print(f"Generating [blue]{count}[/blue] pairs for domain: [green]{domain}[/green]...")
-    
+    print(f"Generating [blue]{count}[/blue] pairs for domain: [green]{domain}[/green] using [cyan]{model}[/cyan]...")
+
     response = client.chat.completions.create(
         model=model,
         messages=[
