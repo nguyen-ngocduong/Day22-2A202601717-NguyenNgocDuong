@@ -6,6 +6,15 @@ import typer
 from rich import print
 from groq import Groq
 
+# Load .env if present
+env_file = Path(__file__).resolve().parent.parent / ".env"
+if env_file.exists():
+    with env_file.open() as f:
+        for line in f:
+            if line.strip() and not line.startswith("#") and "=" in line:
+                k, v = line.strip().split("=", 1)
+                os.environ.setdefault(k, v)
+
 app = typer.Typer(help="Synthetic Data Generation for Preference Alignment")
 
 SYSTEM_PROMPT = """You are an AI data engineer specializing in preference alignment (DPO/ORPO).
@@ -31,9 +40,9 @@ def generate(
     focus: str = "technical accuracy and safety",
     output_file: Path = Path("data/synthetic_preferences.jsonl"),
     seed_file: Path = Path("data/sample_preferences.jsonl"),
-    model: str = "llama-3.1-8b-instant",
+    model: str = "openai/gpt-oss-20b",
 ) -> None:
-    """Generate synthetic preference pairs using Groq (Llama 3.1 8B Instant)."""
+    """Generate synthetic preference pairs using Groq."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         print("[red]Error: GROQ_API_KEY environment variable not set.[/red]")

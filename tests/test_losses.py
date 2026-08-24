@@ -1,12 +1,14 @@
 import numpy as np
-import pytest
+
 from preference_lab.losses import dpo_loss, orpo_loss
 
 
 def test_dpo_loss_returns_float() -> None:
     loss = dpo_loss(
-        np.array([-0.5]), np.array([-1.5]),
-        np.array([-0.6]), np.array([-1.0]),
+        np.array([-0.5]),
+        np.array([-1.5]),
+        np.array([-0.6]),
+        np.array([-1.0]),
         beta=0.1,
     )
     assert isinstance(loss, float)

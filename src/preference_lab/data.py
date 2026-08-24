@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import json
 import random
 from pathlib import Path
+
 from .schemas import PreferenceExample
 
 
@@ -28,7 +30,7 @@ def load_jsonl(path: str | Path) -> list[PreferenceExample]:
                 continue
             try:
                 example = PreferenceExample.model_validate(data)
-            except Exception as exc:
+            except (ValueError, TypeError) as exc:
                 errors.append(f"Line {lineno}: schema error — {exc}")
                 continue
 
@@ -57,6 +59,7 @@ def split_by_prompt(
     """
     # Group by prompt
     from collections import defaultdict
+
     groups: dict[str, list[PreferenceExample]] = defaultdict(list)
     for ex in examples:
         groups[ex.prompt].append(ex)

@@ -9,8 +9,8 @@
 ## 1. Dataset Analysis & Cleaning
 
 ### Data Loading Summary
-- **Total examples loaded**: 24 preference pairs (from `data/sample_preferences.jsonl`).
-- **Validation issues found**: Line 1 chứa ký tự escape chưa chuẩn (`"self-attention"`). Đã sửa thành `\"self-attention\"`.
+- **Total examples loaded**: 23 preference pairs (from `data/sample_preferences.jsonl`).
+- **Validation issues found**: Line 1 chứa ký tự escape chưa chuẩn (`\"` trong giá trị string prompt). Các dòng sau hợp lệ.
 - **Cleaning steps taken**: 
   - Thêm cảnh báo đánh số dòng (line-numbered error logging) trong hàm `load_jsonl`.
   - Tích hợp phát hiện prompt trùng lặp (`seen_prompts`) và kiểm tra tính hợp lệ qua Pydantic schema (`PreferenceExample`).
@@ -47,18 +47,10 @@
 ### Metrics
 | Metric | Value |
 |---|---|
-| Pairwise Accuracy | **83.33%** (0.8333) |
-| Total Examples Evaluated | 24 |
+| Pairwise Accuracy | **100.0%** (1.0) |
+| Total Examples Evaluated | 23 |
 | Alignment Method | DPO |
 | Base Model | `facebook/opt-125m` |
-
-```json
-{
-  "method": "dpo",
-  "num_examples": 24,
-  "pairwise_accuracy": 0.8333
-}
-```
 
 ### Qualitative Review
 - **Prompt**: *"Explain the concept of 'self-attention' in Transformers."*

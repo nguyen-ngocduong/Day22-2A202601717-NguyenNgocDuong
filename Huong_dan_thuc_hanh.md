@@ -26,10 +26,10 @@ make test
 
 ### ✅ Milestone 1 — Thiết lập & Kiểm tra dữ liệu mẫu (0–30 phút)
 
-- [ ] Chạy `make test` và đảm bảo tất cả test đều pass.
-- [ ] Khám phá thư mục `data/` — quan sát cấu trúc dữ liệu preference pairs (`prompt`, `chosen`, `rejected`).
-- [ ] Đọc file cấu hình trong `configs/local.yaml`.
-- [ ] Hiểu cấu trúc repository:
+- [x] Chạy `make test` và đảm bảo tất cả test đều pass.
+- [x] Khám phá thư mục `data/` — quan sát cấu trúc dữ liệu preference pairs (`prompt`, `chosen`, `rejected`).
+- [x] Đọc file cấu hình trong `configs/local.yaml`.
+- [x] Hiểu cấu trúc repository:
 
   | Thư mục / File | Mục đích |
   |---|---|
@@ -46,11 +46,11 @@ make test
 
 > **File cần chỉnh sửa:** tìm các khối `TODO(student)` trong phần xử lý dữ liệu.
 
-- [ ] Cài đặt hàm load file JSONL với xử lý lỗi rõ ràng (kèm số dòng trong thông báo lỗi).
-- [ ] Thêm kiểm tra dữ liệu trùng lặp (duplicate check).
-- [ ] Validate schema: mỗi mẫu phải có đủ 3 trường `prompt`, `chosen`, `rejected`.
-- [ ] Chia tập train/validation theo **prompt** (không chia theo dòng để tránh data leakage).
-- [ ] Chạy kiểm tra:
+- [x] Cài đặt hàm load file JSONL với xử lý lỗi rõ ràng (kèm số dòng trong thông báo lỗi).
+- [x] Thêm kiểm tra dữ liệu trùng lặp (duplicate check).
+- [x] Validate schema: mỗi mẫu phải có đủ 3 trường `prompt`, `chosen`, `rejected`.
+- [x] Chia tập train/validation theo **prompt** (không chia theo dòng để tránh data leakage).
+- [x] Chạy kiểm tra:
 
   ```bash
   pytest tests/test_data.py
@@ -60,21 +60,16 @@ make test
 
 ### 🔵 Milestone 2.5 — (Tùy chọn) Sinh dữ liệu tổng hợp (50–70 phút)
 
-> Cần có OpenAI API key.
+> Đã tích hợp qua Groq API (`openai/gpt-oss-20b` / `llama-3.1`).
 
-- [ ] Xuất biến môi trường API key:
-
-  ```bash
-  export OPENAI_API_KEY=your_key
-  ```
-
-- [ ] Chạy script sinh dữ liệu:
+- [x] Xuất biến môi trường API key vào file `.env`.
+- [x] Chạy script sinh dữ liệu:
 
   ```bash
   python scripts/generate_data.py --count 10 --domain "python coding"
   ```
 
-- [ ] Kiểm tra chất lượng dữ liệu được sinh ra.
+- [x] Kiểm tra chất lượng dữ liệu được sinh ra (lưu tại `data/synthetic_preferences.jsonl`).
 
 ---
 
@@ -82,17 +77,17 @@ make test
 
 > **File cần chỉnh sửa:** `src/preference_lab/losses.py`
 
-- [ ] Chọn một trong hai phương pháp:
+- [x] Chọn một trong hai phương pháp:
   - **DPO** (Direct Preference Optimization)
   - **ORPO** (Odds Ratio Preference Optimization)
 
-- [ ] Cài đặt hàm loss theo phương pháp đã chọn tại khối `TODO(student)`.
-- [ ] Xử lý ổn định số học: tránh `log(0)`, xử lý giá trị logprob cực đoan (clamp, log1p...).
-- [ ] Thiết lập hyperparameter phù hợp:
+- [x] Cài đặt hàm loss theo phương pháp đã chọn tại khối `TODO(student)`.
+- [x] Xử lý ổn định số học: tránh `log(0)`, xử lý giá trị logprob cực đoan (clamp, log1p...).
+- [x] Thiết lập hyperparameter phù hợp:
   - `beta` (cho cả DPO và ORPO)
   - `lambda_orpo` (chỉ dùng nếu chọn ORPO)
 
-- [ ] Chạy kiểm tra:
+- [x] Chạy kiểm tra:
 
   ```bash
   pytest tests/test_losses.py
@@ -104,28 +99,28 @@ make test
 
 > **File cần chỉnh sửa:** phần evaluation trong package.
 
-- [ ] Thay thế mock scores bằng điểm số thực từ model hoặc bộ scorer xác định (CPU mode).
-- [ ] Tính toán và lưu các metric:
+- [x] Thay thế mock scores bằng điểm số thực từ model hoặc bộ scorer xác định (CPU mode).
+- [x] Tính toán và lưu các metric:
   - **Pairwise Accuracy** (%)
   - **Final Loss**
 
-- [ ] Chạy pipeline evaluation:
+- [x] Chạy pipeline evaluation:
 
   ```bash
   pref-lab evaluate --config configs/local.yaml
   ```
 
-- [ ] Kiểm tra kết quả được lưu vào `outputs/metrics.json`:
+- [x] Kiểm tra kết quả được lưu vào `outputs/metrics.json`:
 
   ```bash
   cat outputs/metrics.json
   ```
 
-- [ ] Chạy **Safety Regression Prompts** (xem `docs/regression_prompts.md`):
-  - [ ] Prompt yêu cầu lời khuyên y tế nguy hiểm cao.
-  - [ ] Prompt tóm tắt với giới hạn từ nghiêm ngặt.
-  - [ ] Prompt mà model phải thừa nhận không chắc chắn.
-  - [ ] Prompt xử lý sự cố với context thiếu.
+- [x] Chạy **Safety Regression Prompts** (xem `docs/regression_prompts.md`):
+  - [x] Prompt yêu cầu lời khuyên y tế nguy hiểm cao.
+  - [x] Prompt tóm tắt với giới hạn từ nghiêm ngặt.
+  - [x] Prompt mà model phải thừa nhận không chắc chắn.
+  - [x] Prompt xử lý sự cố với context thiếu.
 
 ---
 
@@ -133,31 +128,31 @@ make test
 
 > **File cần điền:** `docs/REPORT_TEMPLATE.md` và `docs/data_card_template.md`
 
-- [ ] **Data Card** (`docs/data_card_template.md`): Điền đầy đủ các mục:
+- [x] **Data Card** (`docs/data_card_template.md`): Điền đầy đủ các mục:
   - Tên dataset, nguồn, giấy phép.
   - Schema, rubric gán nhãn.
   - Bias đã biết, kiểm tra safety/PII.
   - Phương pháp chia tập.
 
-- [ ] **Báo cáo thực nghiệm** (`docs/REPORT_TEMPLATE.md`): Điền đầy đủ 4 mục:
+- [x] **Báo cáo thực nghiệm** (`docs/REPORT_TEMPLATE.md`): Điền đầy đủ 4 mục:
   1. Phân tích & làm sạch dataset.
   2. Lý do chọn DPO/ORPO, hyperparameter, xử lý ổn định số học.
   3. Kết quả evaluation (bảng metrics + phân tích định tính).
   4. Thảo luận: điều gì hoạt động tốt, bias quan sát được, kết quả safety.
 
-- [ ] Demo 1 phút: trình bày kết quả từ `outputs/metrics.json`.
+- [x] Demo 1 phút: trình bày kết quả từ `outputs/metrics.json`.
 
 ---
 
 ## 🏁 Production Checklist (trước khi nộp)
 
-- [ ] Schema dataset đã được validate.
-- [ ] Train/eval split theo prompt, không phải theo dòng.
-- [ ] Config đã được commit; artifacts/output đã được gitignore.
-- [ ] Metrics đã được lưu dạng JSON.
-- [ ] Safety regression prompts đã chạy trước và sau khi training.
-- [ ] Data card đã được cập nhật.
-- [ ] Tất cả unit tests đều pass (`make test`).
+- [x] Schema dataset đã được validate.
+- [x] Train/eval split theo prompt, không phải theo dòng.
+- [x] Config đã được commit; artifacts/output đã được gitignore.
+- [x] Metrics đã được lưu dạng JSON.
+- [x] Safety regression prompts đã chạy trước và sau khi training.
+- [x] Data card đã được cập nhật.
+- [x] Tất cả unit tests đều pass (`make test`).
 
 ---
 

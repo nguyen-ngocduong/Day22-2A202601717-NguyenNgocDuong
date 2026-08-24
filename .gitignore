@@ -9,3 +9,5 @@ wandb/
 *.safetensors
 *.bin
 .env
+Huong_dan_thuc_hanh.md
+docs/Huong_dan_Kaggle.md

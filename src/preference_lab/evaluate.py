@@ -1,15 +1,29 @@
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 from .schemas import PreferenceExample
 
-def pairwise_accuracy(examples: list[PreferenceExample], chosen_scores: list[float], rejected_scores: list[float]) -> float:
+
+def pairwise_accuracy(
+    examples: list[PreferenceExample], chosen_scores: list[float], rejected_scores: list[float]
+) -> float:
     """Return fraction where chosen score is greater than rejected score."""
     if not examples:
         return 0.0
-    # TODO(student): validate lengths and handle ties explicitly.
-    wins = sum(c > r for c, r in zip(chosen_scores, rejected_scores, strict=False))
-    return wins / len(examples)
+    if len(examples) != len(chosen_scores) or len(examples) != len(rejected_scores):
+        raise ValueError(
+            f"Length mismatch: examples ({len(examples)}), "
+            f"chosen ({len(chosen_scores)}), rejected ({len(rejected_scores)})"
+        )
+    # Strict wins: chosen > rejected (ties count as 0.5)
+    wins = sum(
+        1.0 if c > r else (0.5 if c == r else 0.0)
+        for c, r in zip(chosen_scores, rejected_scores, strict=True)
+    )
+    return float(wins / len(examples))
+
 
 def write_metrics(metrics: dict[str, float], output_dir: str | Path) -> Path:
     path = Path(output_dir)

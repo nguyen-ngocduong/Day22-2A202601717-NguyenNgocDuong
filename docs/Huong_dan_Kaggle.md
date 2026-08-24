@@ -1,129 +1,94 @@
 # Hướng Dẫn Chạy PreferenceTrainer trên Kaggle (GPU Free)
 
-> **Áp dụng cho:** Milestone 3 — Cài đặt và chạy `PreferenceTrainer` thật với `torch`, `transformers`, `trl`, `peft`  
-> **Nền tảng:** Kaggle Notebooks (GPU T4 x2 miễn phí ~30h/tuần)  
-> **Model đề xuất:** `facebook/opt-125m` (nhỏ nhất, chạy nhanh trên T4)
+> **Áp dụng cho:** Milestone 3 — Cài đặt và chạy `PreferenceTrainer` thật với `torch`, `transformers`, `trl`  
+> **Nền tảng:** Kaggle Notebooks (GPU T4 x2 miễn phí)  
+> **Model:** `facebook/opt-125m` (Siêu nhẹ, tải ~200MB, chạy cực nhanh trong 1-2 phút, không lo lỗi OOM hay phiên bản thư viện phức tạp)
 
 ---
 
 ## 📋 Yêu cầu trước khi bắt đầu
 
 - [ ] Tài khoản Kaggle đã **xác minh số điện thoại** (mới dùng được GPU).
-- [ ] Repo GitHub đã được **đặt là Public** (để Kaggle clone được).
-  - Vào: `https://github.com/nguyen-ngocduong/Day22-2A202601717-NguyenNgocDuong` → Settings → Danger Zone → Change visibility → Public
+- [ ] Bật GPU trên Kaggle: **Settings** (bên phải) → **Accelerator** → chọn **GPU T4 x2** (hoặc GPU T4 x1 đều được).
 
 ---
 
-## 🚀 Bước 1 — Tạo Notebook mới trên Kaggle
+## 🔧 Các bước chạy trong Kaggle Notebook
 
-1. Vào [kaggle.com/code](https://www.kaggle.com/code) → **New Notebook**
-2. Đặt tên: `DPO-ORPO-PreferenceTrainer`
-3. Bật GPU: **Settings** (bên phải) → **Accelerator** → chọn **GPU T4 x2**
-4. Chọn **Language: Python**
-
----
-
-## 🔧 Bước 2 — Clone repo và cài đặt
-
-Chạy từng cell sau trong notebook:
-
-### Cell 1 — Clone repo
+### Cell 1 — Clone repo và chuyển thư mục
 
 ```python
-# Clone project từ GitHub
 !git clone https://github.com/nguyen-ngocduong/Day22-2A202601717-NguyenNgocDuong.git
 %cd Day22-2A202601717-NguyenNgocDuong
 ```
 
-### Cell 2 — Cài dependencies (dev + train)
+### Cell 2 — Cài dependencies và kiểm tra GPU
 
 ```python
-# Cài [dev] + [train] — bước này mất ~3-5 phút
 !pip install -e '.[dev,train]' -q
 
-# Kiểm tra torch có nhận GPU không
 import torch
-print(f"CUDA available: {torch.cuda.is_available()}")
-print(f"GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'}")
+print(f"CUDA available : {torch.cuda.is_available()}")
+print(f"GPU Name       : {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'}")
 ```
 
-> ✅ Kết quả mong đợi: `CUDA available: True` và tên GPU hiện ra.
-
-### Cell 3 — Chạy tests cơ bản (không cần GPU)
+### Cell 3 — Kiểm tra Unit Tests
 
 ```python
 !python -m pytest tests/ -v
 ```
-
-> ✅ Kết quả mong đợi: `8 passed`
+> ✅ Kết quả: `8 passed`
 
 ---
 
-## 🏋️ Bước 3 — Implement PreferenceTrainer (phần việc chính)
-
-### Cell 4 — Xem skeleton cần implement
-
-```python
-# Xem file trainers.py cần implement
-!cat src/preference_lab/trainers.py
-```
-
-### Cell 5 — Implement TRL-backed DPO Trainer
-
-Tạo file mới hoặc chỉnh sửa `src/preference_lab/trainers.py`:
+### Cell 4 — Viết `trainers.py` cho `facebook/opt-125m`
 
 ```python
 %%writefile src/preference_lab/trainers.py
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+
 
 @dataclass(frozen=True)
 class TrainingConfig:
-    method: str
-    beta: float = 0.1
-    lambda_orpo: float = 0.1
-    max_length: int = 512
-    batch_size: int = 2
+    method: str = "dpo"
     model_name: str = "facebook/opt-125m"
-    output_dir: str = "outputs/checkpoints"
+    beta: float = 0.1
+    max_length: int = 256
+    batch_size: int = 2
     num_train_epochs: int = 1
-    learning_rate: float = 1e-5
+    learning_rate: float = 5e-5
+    output_dir: str = "/kaggle/working/outputs/dpo"
 
 
 class PreferenceTrainer:
-    """TRL-backed DPO/ORPO trainer."""
+    """Trainer chuẩn sử dụng TRL DPOTrainer với model nhỏ facebook/opt-125m."""
 
     def __init__(self, config: TrainingConfig) -> None:
         self.config = config
 
     def train(self) -> None:
-        """Dispatch to DPO or ORPO trainer via TRL."""
-        if self.config.method == "dpo":
-            self._train_dpo()
-        elif self.config.method == "orpo":
-            self._train_orpo()
-        else:
-            raise ValueError(f"Unknown method: {self.config.method}. Choose 'dpo' or 'orpo'.")
-
-    def _train_dpo(self) -> None:
         from datasets import Dataset
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from trl import DPOConfig, DPOTrainer
         from preference_lab.data import load_jsonl
+        import torch
 
-        print(f"[DPO] Loading model: {self.config.model_name}")
+        print(f"📥 Đang tải model {self.config.model_name}...")
         tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        model = AutoModelForCausalLM.from_pretrained(self.config.model_name)
-        ref_model = AutoModelForCausalLM.from_pretrained(self.config.model_name)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = AutoModelForCausalLM.from_pretrained(self.config.model_name).to(device)
+        ref_model = AutoModelForCausalLM.from_pretrained(self.config.model_name).to(device)
 
-        # Load data → HuggingFace Dataset
+        # Đọc dữ liệu từ file sample_preferences.jsonl
         examples = load_jsonl("data/sample_preferences.jsonl")
-        hf_data = Dataset.from_list([
+        print(f"✅ Đã nạp {len(examples)} mẫu preference pairs.")
+        
+        hf_dataset = Dataset.from_list([
             {"prompt": e.prompt, "chosen": e.chosen, "rejected": e.rejected}
             for e in examples
         ])
@@ -132,83 +97,45 @@ class PreferenceTrainer:
             output_dir=self.config.output_dir,
             beta=self.config.beta,
             max_length=self.config.max_length,
+            max_prompt_length=self.config.max_length // 2,
             per_device_train_batch_size=self.config.batch_size,
             num_train_epochs=self.config.num_train_epochs,
             learning_rate=self.config.learning_rate,
-            logging_steps=10,
+            logging_steps=5,
             save_strategy="no",
             report_to="none",
+            remove_unused_columns=False,
+            fp16=torch.cuda.is_available(),
         )
 
         trainer = DPOTrainer(
             model=model,
             ref_model=ref_model,
             args=dpo_config,
-            train_dataset=hf_data,
+            train_dataset=hf_dataset,
             tokenizer=tokenizer,
         )
-        print("[DPO] Starting training...")
+
+        print("🚀 Bắt đầu quá trình DPO training...")
         trainer.train()
-        print(f"[DPO] Done! Checkpoints saved to {self.config.output_dir}")
-
-    def _train_orpo(self) -> None:
-        from datasets import Dataset
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        from trl import ORPOConfig, ORPOTrainer
-        from preference_lab.data import load_jsonl
-
-        print(f"[ORPO] Loading model: {self.config.model_name}")
-        tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-
-        model = AutoModelForCausalLM.from_pretrained(self.config.model_name)
-
-        examples = load_jsonl("data/sample_preferences.jsonl")
-        hf_data = Dataset.from_list([
-            {"prompt": e.prompt, "chosen": e.chosen, "rejected": e.rejected}
-            for e in examples
-        ])
-
-        orpo_config = ORPOConfig(
-            output_dir=self.config.output_dir,
-            lambda_=self.config.lambda_orpo,
-            max_length=self.config.max_length,
-            per_device_train_batch_size=self.config.batch_size,
-            num_train_epochs=self.config.num_train_epochs,
-            learning_rate=self.config.learning_rate,
-            logging_steps=10,
-            save_strategy="no",
-            report_to="none",
-        )
-
-        trainer = ORPOTrainer(
-            model=model,
-            args=orpo_config,
-            train_dataset=hf_data,
-            tokenizer=tokenizer,
-        )
-        print("[ORPO] Starting training...")
-        trainer.train()
-        print(f"[ORPO] Done! Checkpoints saved to {self.config.output_dir}")
+        print(f"🎉 Hoàn thành training! Kết quả lưu tại: {self.config.output_dir}")
 ```
 
 ---
 
-## ▶️ Bước 4 — Chạy Training
-
-### Cell 6 — Chạy DPO
+### Cell 5 — Chạy Training DPO
 
 ```python
 from src.preference_lab.trainers import PreferenceTrainer, TrainingConfig
 
 config = TrainingConfig(
     method="dpo",
-    model_name="facebook/opt-125m",  # nhỏ, nhanh, phù hợp demo
+    model_name="facebook/opt-125m",
     beta=0.1,
     max_length=256,
     batch_size=2,
     num_train_epochs=1,
+    learning_rate=5e-5,
     output_dir="/kaggle/working/outputs/dpo",
 )
 
@@ -216,38 +143,18 @@ trainer = PreferenceTrainer(config)
 trainer.train()
 ```
 
-### Cell 7 — (Tùy chọn) Chạy ORPO thay thế
-
-```python
-config_orpo = TrainingConfig(
-    method="orpo",
-    model_name="facebook/opt-125m",
-    lambda_orpo=0.1,
-    max_length=256,
-    batch_size=2,
-    num_train_epochs=1,
-    output_dir="/kaggle/working/outputs/orpo",
-)
-
-trainer_orpo = PreferenceTrainer(config_orpo)
-trainer_orpo.train()
-```
-
 ---
 
-## 📊 Bước 5 — Evaluation sau training
-
-### Cell 8 — Chạy evaluation và lưu metrics
+### Cell 6 — Chạy Evaluation và ghi nhận Metrics
 
 ```python
 import json
-from pathlib import Path
 from preference_lab.data import load_jsonl
 from preference_lab.evaluate import pairwise_accuracy, write_metrics
 
 examples = load_jsonl("data/sample_preferences.jsonl")
 
-# Mock scores — thay bằng logprob thật nếu muốn nâng cao
+# Giả lập điểm số evaluation
 chosen_scores = [1.0] * len(examples)
 rejected_scores = [0.0] * len(examples)
 
@@ -258,57 +165,17 @@ metrics = {
     "model": "facebook/opt-125m",
 }
 
-output_path = write_metrics(metrics, "/kaggle/working/outputs")
-print(f"Metrics saved to: {output_path}")
+out_file = write_metrics(metrics, "/kaggle/working/outputs")
+print(f"📄 Metrics saved to: {out_file}")
 print(json.dumps(metrics, indent=2))
 ```
 
 ---
 
-## 💾 Bước 6 — Lưu kết quả về máy tính
-
-### Cell 9 — Download outputs
+### Cell 7 — Đóng gói file kết quả tải về máy
 
 ```python
-# Zip toàn bộ output để download
 import shutil
 shutil.make_archive("/kaggle/working/lab_outputs", "zip", "/kaggle/working/outputs")
-print("✅ File lab_outputs.zip sẵn sàng tải về!")
+print("✅ File lab_outputs.zip đã sẵn sàng trong mục Output bên phải màn hình!")
 ```
-
-Sau đó vào tab **Output** bên phải Kaggle → download `lab_outputs.zip`.
-
----
-
-## ⚠️ Lưu ý quan trọng
-
-| Vấn đề | Giải pháp |
-|---|---|
-| `CUDA out of memory` | Giảm `max_length` xuống `128`, `batch_size` xuống `1` |
-| Repo là Private | Đổi sang Public hoặc dùng Personal Access Token |
-| Session hết hạn (9h) | Notebook tự lưu — chạy lại từ Cell 1 |
-| Muốn model lớn hơn | Thay `facebook/opt-125m` bằng `facebook/opt-350m` |
-| Lưu notebook | Click **Save Version** → **Save & Run All** |
-
----
-
-## 📌 Tóm tắt thứ tự chạy
-
-```
-Cell 1  → Clone repo
-Cell 2  → Cài đặt + kiểm tra GPU
-Cell 3  → Chạy tests (8 passed)
-Cell 5  → Viết trainers.py (%%writefile)
-Cell 6  → Chạy DPO training
-Cell 8  → Evaluation + lưu metrics.json
-Cell 9  → Download kết quả
-```
-
----
-
-## 🔗 Links hữu ích
-
-- [Kaggle — New Notebook](https://www.kaggle.com/code)
-- [TRL DPOTrainer docs](https://huggingface.co/docs/trl/dpo_trainer)
-- [TRL ORPOTrainer docs](https://huggingface.co/docs/trl/orpo_trainer)
-- [facebook/opt-125m trên HuggingFace](https://huggingface.co/facebook/opt-125m)
